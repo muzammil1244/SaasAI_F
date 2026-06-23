@@ -3,13 +3,21 @@ import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
+import { Home } from './user/home'
+
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
-  <h1 className='text-amber-600'>hiiiiiii</h1>
-  )
+
+<div className='h-screen w-screen'>
+
+<Home/>
+
+</div>
+
+    )
 }
 
 export default App
