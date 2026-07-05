@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Settings, LogOut, AtSign } from "lucide-react";
 import { Signout } from "../buttons";
+import { useNavigate } from "react-router";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Su","Mo","Tu","We","Th","Fr","Sa"];
@@ -73,6 +74,60 @@ function MiniCalendar() {
 }
 
 export const Side = () => {
+
+
+
+  let navigate = useNavigate()
+
+  const [get_profile , set_profile] = useState({})
+  let token = localStorage.getItem("token")
+// logout fun
+
+const logout=()=>{
+    console.log("Logout clicked");
+
+  localStorage.removeItem("token")
+  navigate("/")
+  
+}
+
+// profile 
+
+const profile=async()=>{
+
+  try {
+    let profile_fetch = await fetch(`${import.meta.env.VITE_SERVER}user/profile`,{
+    headers:{
+      "Content-Type":"application/json",
+      "authorization":`Bearer ${token}`
+    },
+    method:"GET",
+    
+  })
+
+  let data = await profile_fetch.json()
+  console.log("profile Data " ,data)
+  set_profile(data)
+  } catch (error) {
+        console.log(error)
+
+    return error
+  }
+
+  
+
+
+
+}
+
+
+
+// useEffect for first fechting data 
+
+useEffect(()=>{
+profile()
+},[])
+
   return (
     <div className="w-full h-full   bg-white flex flex-col gap-3 py-2 px-2">
 
@@ -83,19 +138,22 @@ export const Side = () => {
             MM
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-800 truncate">Mohammad Muzammil</p>
+            <p className="text-sm font-medium text-gray-800 truncate">{get_profile.name}</p>
             <div className="flex items-center gap-1 mt-0.5">
               <AtSign className="size-3 text-gray-400" />
-              <p className="text-xs text-gray-400 truncate">mohammad.muzammil</p>
+              <p className="text-xs text-gray-400 truncate">{get_profile.email}</p>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-100 pt-3 flex gap-2">
-          <button className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-xl py-2 hover:bg-gray-50 transition-colors">
+        <div className="border-t border-gray-100 pt-3 flex  gap-2">
+          <button  className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-500 border  border-gray-200 rounded-xl py-2 hover:bg-gray-50 transition-colors">
             <Settings className="size-3" /> Settings
           </button>
-          <Signout className="flex-1 flex items-center justify-center gap-1.5 text-xs text-red-500 border border-red-100 rounded-xl py-2 hover:bg-red-50 transition-colors" />
+          <button onClick={()=>logout()} className="" >
+                      <Signout  className="flex-1 flex items-center justify-center gap-1.5 text-xs text-red-500 border border-red-100 rounded-xl py-2 hover:bg-red-50 transition-colors" />
+
+          </button>
         </div>
       </div>
 

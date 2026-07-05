@@ -1,7 +1,92 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Buttons } from "../buttons";
+import { User, Bot } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+// markdown ko table + text dono ke liye style karne wale components
+const markdownComponents = {
+  table: ({ node, ...props }) => (
+    <table className="border-collapse border border-gray-300 w-full my-2 text-sm" {...props} />
+  ),
+  thead: ({ node, ...props }) => <thead className="bg-gray-100" {...props} />,
+  th: ({ node, ...props }) => (
+    <th className="border border-gray-300 px-2 py-1 text-left font-semibold" {...props} />
+  ),
+  td: ({ node, ...props }) => <td className="border border-gray-300 px-2 py-1" {...props} />,
+  p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+};
+
 export const Chat = () => {
   const taRef = useRef(null);
+
+  const [get_que, set_que] = useState("");
+  const [get_ans, set_ans] = useState({});
+  const [get_history, set_history] = useState([]);
+  const [get_final_answer, set_final_answer] = useState("");
+  const [get_question, set_question] = useState("");
+  const [displayed_answer, set_displayed_answer] = useState(""); // streaming effect ke liye
+  const [loading, set_loading] = useState(false);
+
+  let token = localStorage.getItem("token");
+const bottomRef = useRef(null);
+  const question_submit = async () => {
+    if (!get_que.trim() || loading) return;
+
+    set_loading(true);
+    
+
+
+    try {
+      let res = await fetch(`${import.meta.env.VITE_SERVER}user/chat`, {
+        headers: {
+          "Content-Type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        method: "POST",
+        body: JSON.stringify({
+          qna: get_que,
+        }),
+      });
+
+      let data = await res.json();
+      console.log("Answer", data);
+
+      set_ans(data);
+      set_final_answer(data.final_answer);
+      set_history(data.history);
+      set_question(data.qna);
+      set_que(""); // input box khali karo
+
+      set_loading(false);
+
+      // ab fake streaming effect chalao final_answer ke liye
+      revealAnswer(data.final_answer);
+    } catch (error) {
+      console.log(error);
+      set_loading(false);
+      return error;
+    }
+  };
+
+  // fake streaming effect - line by line reveal (table ke liye better hai)
+  const revealAnswer = (fullText) => {
+    if (!fullText) return;
+
+    const lines = fullText.split("\n");
+    let currentText = "";
+    let index = 0;
+
+    const interval = setInterval(() => {
+      currentText += (index === 0 ? "" : "\n") + lines[index];
+      set_displayed_answer(currentText);
+      index++;
+
+      if (index >= lines.length) {
+        clearInterval(interval);
+      }
+    }, 100);
+  };
 
   useEffect(() => {
     const ta = taRef.current;
@@ -15,7 +100,7 @@ export const Chat = () => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        // apna send function yahan
+        question_submit();
       }
     };
 
@@ -26,66 +111,140 @@ export const Chat = () => {
       ta.removeEventListener("input", handleInput);
       ta.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
-
+  }, [get_que]);
+useEffect(() => {
+  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [get_history, get_question, displayed_answer]);
   return (
-    <div className="w-full h-full flex-col flex justify-between bg-white">
-
+    <div className="w-full relative h-screen  grid-cols-1 grid grid-rows-10 justify-between  bg-white">
       {/* header */}
-      <header className="w-full px-3 h-8 bg-white">
-
-        <h1 className="text-slate-900 text-lg font-bold gap-7 ">
-    appoint<span className="text-cyan-300">ly</span>
-</h1>
+      <header className=" px-3 h-8 row-span-1 bg-white">
+        <h1 className="text-slate-900 text-lg font-bold gap-7">
+          appoint<span className="text-cyan-300">ly</span>
+        </h1>
       </header>
 
-
       {/* answer */}
-      <div className="w-full h-full">
+      <div className="w-full h-full row-span-8 bg-white flex-1">
+        {get_ans.ans || get_final_answer ? (
+          <div className="w-full h-full  bg-white overflow-y-scroll px-6 py-6">
+            {/* Previous History */}
+            {get_history?.map((item, index) => (
+              <div
+                key={index}
+                className={`flex mb-5  ${
+                  item.role.trim() === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`flex gap-3 items-start max-w-[75%] ${
+                    item.role.trim() === "user" ? "flex-row-reverse" : ""
+                  }`}
+                >
+                  {/* Avatar */}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-none ${
+                      item.role.trim() === "user"
+                        ? "bg-cyan-500 text-white"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {item.role.trim() === "user" ? <User size={18} /> : <Bot size={18} />}
+                  </div>
 
+                  {/* Message */}
+                  <div
+                    className={`px-4 py-3 rounded-2xl shadow prose prose-sm max-w-none ${
+                      item.role.trim() === "user"
+                        ? "bg-cyan-500 text-white rounded-br-sm"
+                        : "bg-white border text-gray-800 rounded-bl-sm"
+                    }`}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                      {item.content}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            ))}
 
-{/* logo */}
+            {/* Latest User Question */}
+            {get_question && (
+              <div className="flex justify-end mb-5">
+                <div className="flex flex-row-reverse gap-3 items-start max-w-[75%]">
+                  <div className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center flex-none">
+                    <User size={18} />
+                  </div>
 
-<div className="w-full  flex flex-col gap-1 justify-center items-center h-full">
+                  <div className="bg-cyan-500 text-white px-4 py-3 rounded-2xl rounded-br-sm shadow">
+                    {get_question}
+                  </div>
+                </div>
+              </div>
+            )}
 
-    <div className="  animate-bounce ">
-<img className="w-30 h-30" src="images/img11.png" alt="" />
-    </div>
+            {/* Latest AI Answer - streaming effect ke saath */}
+            {displayed_answer && (
+              <div className="flex justify-start mb-5">
+                <div className="flex gap-3 items-start max-w-[75%]">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center flex-none">
+                    <Bot size={18} />
+                  </div>
 
-    <div className="w-20 shadow bg-gray-200 rounded-[50%] h-1"></div>
+                  <div className="bg-white border px-4 py-3 rounded-2xl rounded-bl-sm shadow text-gray-800 prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                      {displayed_answer}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            )}
 
-        <img className="w-[30%] h-[40%] " src="images/img12.png" alt="" />
-  
+            {/* Loading indicator */}
+            {loading && (
+              <div className="flex justify-start mb-5">
+                <div className="flex gap-3 items-start max-w-[75%]">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center flex-none">
+                    <Bot size={18} />
+                  </div>
+                  <div className="bg-white border px-4 py-3 rounded-2xl rounded-bl-sm shadow text-gray-400 text-sm">
+                    Soch raha hoon...
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* bottom scroll */}
+            <div ref={bottomRef} />
+          </div>
+        ) : (
+          <div className="w-full bg-white flex flex-col gap-1 justify-center items-center h-full">
+            <div className="animate-bounce">
+              <img className="w-30 h-30" src="images/img11.png" alt="" />
+            </div>
 
-    <div>
+            <div className="w-20 shadow bg-gray-200 rounded-[50%] h-1"></div>
 
-    </div>
-
-</div>
-
+            <img className="w-[30%] h-[40%]" src="images/img12.png" alt="" />
+          </div>
+        )}
       </div>
 
       {/* query input */}
-      
-      <div className="px-40 py-2">
-        <div className="flex flex-col items-end gap-2 border border-gray-200 rounded-2xl px-4 py-3 focus-within:ring-1 focus-within:ring-blue-100 focus-within:border-blue-200 transition-all">
-
-
-
-
+      <div className="px-40 absolute w-full bottom-3 shadow   py-2">
+        <div className="flex flex-col bg-white items-end gap-2 shadow-sm  rounded-2xl px-4 py-3 focus-within:ring-1 focus-within:ring-blue-100 focus-within:border-blue-200 transition-all">
           <textarea
             ref={taRef}
             rows={1}
+            value={get_que}
             placeholder="Message..."
-            className=" w-full text-sm resize-none border-none outline-none bg-transparent leading-relaxed overflow-y-auto"
+            onChange={(e) => set_que(e.target.value)}
+            className="w-full text-sm resize-none border-none outline-none bg-transparent leading-relaxed overflow-y-auto"
             style={{ minHeight: "24px", maxHeight: "200px" }}
           />
 
-          <Buttons />
-
+          <Buttons onclick={() => question_submit()} />
         </div>
       </div>
-
     </div>
   );
 };
