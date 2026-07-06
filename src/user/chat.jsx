@@ -27,14 +27,17 @@ export const Chat = () => {
   const [get_question, set_question] = useState("");
   const [displayed_answer, set_displayed_answer] = useState(""); // streaming effect ke liye
   const [loading, set_loading] = useState(false);
-
-  let token = localStorage.getItem("token");
+const [token , set__token ] = useState("")
 const bottomRef = useRef(null);
+
+
+
+let navigate = useNavigate()
   const question_submit = async () => {
     if (!get_que.trim() || loading) return;
 
     set_loading(true);
-    
+
 
 
     try {
@@ -115,6 +118,14 @@ const bottomRef = useRef(null);
 useEffect(() => {
   bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 }, [get_history, get_question, displayed_answer]);
+
+useEffect(()=>{
+ let token =  localStorage.getItem("token")
+ if(!token){
+navigate("/")
+ }
+ set__token(token)
+},[])
   return (
     <div className="w-full relative h-screen  grid-cols-1 grid grid-rows-10 justify-between  bg-white">
       {/* header */}
@@ -125,49 +136,13 @@ useEffect(() => {
       </header>
 
       {/* answer */}
-      <div className="w-full h-full row-span-8 bg-white flex-1">
+      <div className="w-full h-full row-span-8 pb-5 bg-white flex-1">
         {get_ans.ans || get_final_answer ? (
-          <div className="w-full h-full  bg-white overflow-y-scroll px-6 py-6">
+          <div className="w-full h-full overflow-x-hidden  bg-white overflow-y-scroll md:px-6 px-3 py-3 md:py-6">
             {/* Previous History */}
-            {get_history?.map((item, index) => (
-              <div
-                key={index}
-                className={`flex mb-5  ${
-                  item.role.trim() === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`flex gap-3 items-start max-w-[75%] ${
-                    item.role.trim() === "user" ? "flex-row-reverse" : ""
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-none ${
-                      item.role.trim() === "user"
-                        ? "bg-cyan-500 text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {item.role.trim() === "user" ? <User size={18} /> : <Bot size={18} />}
-                  </div>
-
-                  {/* Message */}
-                  <div
-                    className={`px-4 py-3 rounded-2xl shadow prose prose-sm max-w-none ${
-                      item.role.trim() === "user"
-                        ? "bg-cyan-500 text-white rounded-br-sm"
-                        : "bg-white border text-gray-800 rounded-bl-sm"
-                    }`}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                      {item.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-            ))}
-
+           {get_history?.map((item, index) => (
+  <Message key={index} role={item.role} content={item.content} />
+))}
             {/* Latest User Question */}
             {get_question && (
               <div className="flex justify-end mb-5">
@@ -219,18 +194,18 @@ useEffect(() => {
         ) : (
           <div className="w-full bg-white flex flex-col gap-1 justify-center items-center h-full">
             <div className="animate-bounce">
-              <img className="w-30 h-30" src="images/img11.png" alt="" />
+              <img className="md:w-30 md:h-30 h-15 w-15 " src="images/img11.png" alt="" />
             </div>
 
             <div className="w-20 shadow bg-gray-200 rounded-[50%] h-1"></div>
 
-            <img className="w-[30%] h-[40%]" src="images/img12.png" alt="" />
+            <img className="md:w-[30%] md:h-[40%] h-20 w-[70%]"  src="images/img12.png" alt="" />
           </div>
         )}
       </div>
 
       {/* query input */}
-      <div className="px-40 absolute w-full bottom-3 shadow   py-2">
+      <div className="md:px-40 absolute w-full bottom-3 shadow py-1 px-10  md:py-2">
         <div className="flex flex-col bg-white items-end gap-2 shadow-sm  rounded-2xl px-4 py-3 focus-within:ring-1 focus-within:ring-blue-100 focus-within:border-blue-200 transition-all">
           <textarea
             ref={taRef}
@@ -248,3 +223,28 @@ useEffect(() => {
     </div>
   );
 };
+
+import { memo } from "react";
+import { useNavigate } from "react-router";
+
+const Message = memo(function Message({ role, content }) {
+  const isUser = role.trim() === "user";
+  return (
+    <div className={`flex overflow-x-scroll mb-5 ${isUser ? "justify-end" : "justify-start"}`}>
+      <div className={`flex md:gap-3 gap-2 items-start md:max-w-[75%] ${isUser ? "flex-row-reverse" : ""}`}>
+        <div className={`md:w-10 md:h-10 h-7 w-7 rounded-full flex items-center justify-center flex-none ${
+          isUser ? "bg-cyan-500 text-white" : "bg-gray-200 text-gray-700"
+        }`}>
+          {isUser ? <User size={18} /> : <Bot size={18} />}
+        </div>
+        <div className={`md:px-4 px-2 py-2 md:py-3 w-full rounded-2xl shadow prose prose-sm md:max-w-none ${
+          isUser ? "bg-cyan-500 text-white rounded-br-sm" : "bg-white border text-gray-800 rounded-bl-sm"
+        }`}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+            {content}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  );
+});
