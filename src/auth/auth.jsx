@@ -60,51 +60,63 @@ export const Auth = ({offauth}) => {
 };
 
 
+import { Loader2 } from "lucide-react"; // add this to your imports
+
+
 export const LoginForm = ({ onSwitchToRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // 👈 new
 
-  const [get_login_data , set_login_data] = useState({
-    email:"",
-    password:""
-  })
+  const [get_login_data, set_login_data] = useState({
+    email: "",
+    password: ""
+  });
 
-  let navigate = useNavigate()
+  let navigate = useNavigate();
 
+const login_submit = async (e) => {
+  e.preventDefault();
+  console.log("login fun activated");
 
-  const login_submit=async(e)=>{
-e.preventDefault()
-console.log("login fun activated")
-
-try {
-
-let login = await fetch(`${import.meta.env.VITE_SERVER}auth/login`,{
-  headers:{
-    "Content-Type":"application/json"
-  },
-  method:"POST",
-  body : JSON.stringify(get_login_data)
-})
-let data = await login.json()
-
-console.log(data)
-
-localStorage.setItem("token",data.token)
-
-
-console.log("login successfuly")
-if(get_login_data.email == "admin1244@gmail.com"){
-  return navigate("/admin")
-}
-return navigate("/user")
-
-
-  
-} catch (error) {
-  console.log("error from login",error)
-  return error
-}
-
+  if (get_login_data.email == "" || get_login_data.password == "") {
+    return alert("give email and password");
   }
+
+  setIsLoading(true); // 👈 loading yahan set karo, validation ke baad
+
+  try {
+    let login = await fetch(`${import.meta.env.VITE_SERVER}auth/login`, {
+      headers: {
+        "Content-Type": "application/json"
+      },
+      method: "POST",
+      body: JSON.stringify(get_login_data)
+    });
+
+    let data = await login.json();
+    console.log(data);
+
+    // 👇 yehi main fix hai
+    if (!login.ok || !data.token) {
+      alert(data.message || "Invalid email or password");
+      return; // yahin ruk jao, navigate mat karo
+    }
+
+    localStorage.setItem("token", data.token);
+    console.log("login successfuly");
+
+    if (get_login_data.email == "admin1244@gmail.com") {
+      return navigate("/admin");
+    }
+    return navigate("/user");
+
+  } catch (error) {
+    console.log("error from login", error);
+    alert("Something went wrong, please try again");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="auth-body rounded-3xl border border-[#E5EAE8] bg-white p-8 shadow-[0_10px_40px_rgba(14,33,29,0.06)]">
@@ -118,7 +130,7 @@ return navigate("/user")
           <input
             type="email"
             value={get_login_data.email}
-            onChange={(e)=>set_login_data({...get_login_data,email:e.target.value})}
+            onChange={(e) => set_login_data({ ...get_login_data, email: e.target.value })}
             placeholder="Email address"
             className="w-full bg-transparent text-sm text-[#0E211D] placeholder:text-[#9AA6A3] focus:outline-none"
           />
@@ -130,11 +142,11 @@ return navigate("/user")
           <input
             type={showPassword ? "text" : "password"}
             onChange={(e) =>
-  set_login_data({
-    ...get_login_data,
-    password: e.target.value,
-  })
-}
+              set_login_data({
+                ...get_login_data,
+                password: e.target.value,
+              })
+            }
             placeholder="Password"
             className="w-full bg-transparent text-sm text-[#0E211D] placeholder:text-[#9AA6A3] focus:outline-none"
           />
@@ -153,10 +165,20 @@ return navigate("/user")
 
         <button
           type="submit"
-          className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5"
+          disabled={isLoading}
+          className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          Login
-          <ArrowRight className="h-4 w-4" strokeWidth={2} />
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+              Logging in...
+            </>
+          ) : (
+            <>
+              Login
+              <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            </>
+          )}
         </button>
       </form>
 
@@ -173,50 +195,55 @@ return navigate("/user")
 
 export const RegisterForm = ({ onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
-const [register_data , set_register_data] = useState({
-  name:"",
-  email:"",
-  password:""
-})
+  const [isLoading, setIsLoading] = useState(false); // 👈 new
+  const [register_data, set_register_data] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
 
+  const submit_register = async (e) => {
+  e.preventDefault();
 
+  if (register_data.name == "" || register_data.email == "" || register_data.password == "") {
+    console.log("please provided all field", register_data);
+    alert('please full fill all data');
+    return false;
+  }
 
+  setIsLoading(true); // 👈 start loading
 
-const submit_register =async (e)=>{
-  e.preventDefault()
+  try {
+    let post_register = await fetch(`${import.meta.env.VITE_SERVER}auth/register`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify(register_data)
+    });
 
-if(register_data.name == "" || register_data.email == "" || register_data.password == "") {
+    let data = await post_register.json();
+    console.log(data);
 
-  console.log("please provided all field",register_data)
-  return false
-}
+    // 👇 yehi fix hai
+    if (!post_register.ok) {
+      alert(data.message || "Registration failed, please try again");
+      return; // yahin ruk jao, onSwitchToLogin mat call karo
+    }
 
-try {
+    console.log("user register successfully");
+    onSwitchToLogin(); // sirf success pe hi login form pe bhejo
 
- let post_register = await fetch(`${import.meta.env.VITE_SERVER}auth/register`,{
-    headers: {
-      "Content-Type": "application/json",
-    },
-    method:"POST",
-    body:JSON.stringify(register_data)
-
-  })
-  onSwitchToLogin()
-
-  return console.log("user register successfully ")
-
-  
-} catch (error) {
-
-  console.log("error from register user" , error )
-  
-  return error
-}
- 
-
-}
+  } catch (error) {
+    console.log("error from register user", error);
+    alert("Something went wrong, please try again");
+  } finally {
+    setIsLoading(false); // 👈 sab paths me isse hi loading band hogi
+  }
+};
   return (
-    <div className="auth-body rounded-3xl border border-[#E5EAE8] bg-white p-8 shadow-[0_10px_40px_rgba(14,33,29,0.06)]">
+    // ...same JSX as before, sirf button ye replace karo:
+ <div className="auth-body rounded-3xl border border-[#E5EAE8] bg-white p-8 shadow-[0_10px_40px_rgba(14,33,29,0.06)]">
       <h2 className="auth-display text-2xl font-bold text-[#0E211D]">Create your account</h2>
       <p className="mt-1 text-sm text-[#5B6B67]">Register once, book appointments in seconds.</p>
 
@@ -244,7 +271,7 @@ try {
         </div>
 
         {/* password */}
-        <div className="flex items-center gap-3 rounded-xl border border-[#E5EAE8] bg-white px-4 py-3 transition-colors duration-200 focus-within:border-cyan-bg-cyan-500">
+ <div className="flex items-center gap-3 rounded-xl border border-[#E5EAE8] bg-white px-4 py-3 transition-colors duration-200 focus-within:border-cyan-bg-cyan-500">
           <Lock className="h-4.5 w-4.5 flex-none text-[#5B6B67]" strokeWidth={1.75} />
           <input
             type={showPassword ? "text" : "password"}
@@ -252,34 +279,25 @@ try {
             placeholder="Password"
             className="w-full bg-transparent text-sm text-[#0E211D] placeholder:text-[#9AA6A3] focus:outline-none"
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="flex-none text-[#9AA6A3] hover:text-[#5B6B67]"
-          >
-            {showPassword ? (
-              <EyeOff className="h-4.5 w-4.5" strokeWidth={1.75} />
-            ) : (
-              <Eye className="h-4.5 w-4.5" strokeWidth={1.75} />
-            )}
-          </button>
-        </div>
-
-        <button
-          type="submit"
-          className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5"
-        >
+          </div>
+    <button
+      type="submit"
+      disabled={isLoading}
+      className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3 text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+    >
+      {isLoading ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+          Registering...
+        </>
+      ) : (
+        <>
           Register
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
-        </button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-[#5B6B67]">
-        Already have an account?{" "}
-        <button onClick={onSwitchToLogin} className="font-semibold text-cyan-bg-cyan-500 hover:underline">
-          Login
-        </button>
-      </p>
+        </>
+      )}
+    </button>
+    </form>
     </div>
   );
 };

@@ -3,6 +3,9 @@ import { Buttons } from "../buttons";
 import { User, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { CircleStop } from 'lucide-react';
+import img11 from '../../images/img11.png'
+import img12 from '../../images/img12.png'
 
 // markdown ko table + text dono ke liye style karne wale components
 const markdownComponents = {
@@ -160,13 +163,13 @@ navigate("/")
 
             {/* Latest AI Answer - streaming effect ke saath */}
             {displayed_answer && (
-              <div className="flex justify-start mb-5">
-                <div className="flex gap-3 items-start max-w-[75%]">
+              <div className="flex  mb-5">
+                <div className="flex overflow-x-scroll gap-3 ">
                   <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center flex-none">
                     <Bot size={18} />
                   </div>
 
-                  <div className="bg-white border px-4 py-3 rounded-2xl rounded-bl-sm shadow text-gray-800 prose prose-sm max-w-none">
+                  <div className="bg-gray-100  px-4 py-3 rounded-2xl rounded-bl-sm shadow text-gray-800 prose prose-sm max-w-none">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                       {displayed_answer}
                     </ReactMarkdown>
@@ -183,7 +186,7 @@ navigate("/")
                     <Bot size={18} />
                   </div>
                   <div className="bg-white border px-4 py-3 rounded-2xl rounded-bl-sm shadow text-gray-400 text-sm">
-                    Soch raha hoon...
+                    thinking ....
                   </div>
                 </div>
               </div>
@@ -194,7 +197,7 @@ navigate("/")
         ) : (
           <div className="w-full bg-white flex flex-col gap-1 justify-center items-center h-full">
             <div className="animate-bounce">
-              <img className="md:w-30 md:h-30 h-15 w-15 " src="images/img11.png" alt="" />
+              <img className="md:w-30 md:h-30 h-15 w-15 " src={img11} alt="" />
             </div>
 
             <div className="w-20 shadow bg-gray-200 rounded-[50%] h-1"></div>
@@ -216,8 +219,12 @@ navigate("/")
             className="w-full text-sm resize-none border-none outline-none bg-transparent leading-relaxed overflow-y-auto"
             style={{ minHeight: "24px", maxHeight: "200px" }}
           />
+{
+  loading ? <div className="  justify-center items-center flex hover:scale-105 duration-100  bg-gray-50 text-sm hover:bg-gray-200 duration-100 hover:cursor-pointer  text-black px-5 shadow py-2 rounded-xl">
+<CircleStop className="text-gray-700 size-5"/>
+  </div> :          <Buttons onclick={() => question_submit()} />
 
-          <Buttons onclick={() => question_submit()} />
+}
         </div>
       </div>
     </div>
@@ -230,7 +237,7 @@ import { useNavigate } from "react-router";
 const Message = memo(function Message({ role, content }) {
   const isUser = role.trim() === "user";
   return (
-    <div className={`flex overflow-x-scroll mb-5 ${isUser ? "justify-end" : "justify-start"}`}>
+    <div className={`flex overflow-x-auto mb-5 ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`flex md:gap-3 gap-2 items-start md:max-w-[75%] ${isUser ? "flex-row-reverse" : ""}`}>
         <div className={`md:w-10 md:h-10 h-7 w-7 rounded-full flex items-center justify-center flex-none ${
           isUser ? "bg-cyan-500 text-white" : "bg-gray-200 text-gray-700"
@@ -238,7 +245,7 @@ const Message = memo(function Message({ role, content }) {
           {isUser ? <User size={18} /> : <Bot size={18} />}
         </div>
         <div className={`md:px-4 px-2 py-2 md:py-3 w-full rounded-2xl shadow prose prose-sm md:max-w-none ${
-          isUser ? "bg-cyan-500 text-white rounded-br-sm" : "bg-white border text-gray-800 rounded-bl-sm"
+          isUser ? "bg-cyan-500 text-gray-100 rounded-br-sm" : "bg-gray-100  text-gray-800 rounded-bl-sm"
         }`}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {content}
